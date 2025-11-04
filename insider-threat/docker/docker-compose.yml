@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: insider-threat-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount models directory for development (allows updating models without rebuild)
+      - ../models:/app/models
+      - ../artifacts:/app/artifacts
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Jupyter notebook service for data exploration
+  notebook:
+    image: jupyter/scipy-notebook:latest
+    container_name: insider-threat-notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - ../notebooks:/home/jovyan/work
+      - ../data:/home/jovyan/work/data
+      - ../models:/home/jovyan/work/models
+      - ../artifacts:/home/jovyan/work/artifacts
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    command: start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''
+    profiles:
+      - notebook  # Only start with: docker-compose --profile notebook up
+

@@ -1,0 +1,48 @@
+# Insider Threat Detection ML Project - Dependencies
+# 
+# To pin versions later, use: pip freeze > requirements-locked.txt
+# For production, consider pinning exact versions for reproducibility
+
+# Core data science libraries
+# Note: Python 3.10+ required (install Python separately)
+pandas
+numpy
+scikit-learn
+
+# Machine learning models
+xgboost
+torch
+
+# Model persistence and utilities
+joblib
+
+# API framework
+fastapi
+uvicorn
+pydantic
+
+# Explainability
+shap
+
+# Visualization
+matplotlib
+seaborn
+plotly
+
+# Demo app (Streamlit)
+streamlit
+
+# API client (for FastAPI testing and demo)
+httpx
+requests
+
+# Utilities
+tabulate
+
+# Testing
+pytest
+
+# Optional: Jupyter for notebooks
+jupyter
+ipykernel
+

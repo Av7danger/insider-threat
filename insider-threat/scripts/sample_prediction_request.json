@@ -1,0 +1,11 @@
+{
+  "total_events": 150.0,
+  "unique_src_ip": 3.0,
+  "unique_dst_ip": 10.0,
+  "distinct_files": 45.0,
+  "avg_success": 0.95,
+  "start_hour": 9.0,
+  "end_hour": 17.0,
+  "peak_hour": 14.0
+}
+
