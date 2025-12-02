@@ -33,7 +33,11 @@ from sklearn.metrics import roc_curve, roc_auc_score
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend for headless environments
 import matplotlib.pyplot as plt
-import shap
+try:
+    import shap
+    SHAP_AVAILABLE = True
+except ImportError:
+    SHAP_AVAILABLE = False
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -524,34 +528,38 @@ def render_results(results_df, top_k, show_shap, xgb_model, xgb_scaler):
         # SHAP explanations
         if show_shap and xgb_model is not None and xgb_scaler is not None:
             st.subheader("SHAP Explanations")
-            try:
-                with st.spinner("Computing SHAP values (this may take a few seconds)..."):
-                    top_k_indices = results_sorted.head(top_k).index.tolist()
-                    shap_values, feature_names, summary_path, shap_values_full = compute_shap_and_save(
-                        results_df, xgb_model, xgb_scaler, top_k_indices
-                    )
+            if not SHAP_AVAILABLE:
+                st.warning("⚠️ SHAP is not installed. Install with: `pip install shap`")
+                st.info("SHAP explanations are disabled. Other features still work!")
+            else:
+                try:
+                    with st.spinner("Computing SHAP values (this may take a few seconds)..."):
+                        top_k_indices = results_sorted.head(top_k).index.tolist()
+                        shap_values, feature_names, summary_path, shap_values_full = compute_shap_and_save(
+                            results_df, xgb_model, xgb_scaler, top_k_indices
+                        )
+                    
+                    st.success("SHAP completed and saved to artifacts/")
+                    
+                    # Show summary image
+                    if Path(summary_path).exists():
+                        st.image(summary_path, use_container_width=True)
+                    
+                    # Show per-row explanations for top anomalies
+                    st.write("**Top anomaly explanations:**")
+                    for idx, (orig_idx, row) in enumerate(top_k_results.head(5).iterrows(), 1):
+                        # Get SHAP values for this specific row
+                        if orig_idx < len(shap_values_full):
+                            shap_row = shap_values_full[orig_idx]
+                        else:
+                            shap_row = np.zeros(len(feature_names))
+                        explanation = get_top_features_text(shap_row, feature_names)
+                        st.write(f"{idx}. **User {row['user']}** ({row['date']}): {explanation}")
                 
-                st.success("SHAP completed and saved to artifacts/")
-                
-                # Show summary image
-                if Path(summary_path).exists():
-                    st.image(summary_path, use_container_width=True)
-                
-                # Show per-row explanations for top anomalies
-                st.write("**Top anomaly explanations:**")
-                for idx, (orig_idx, row) in enumerate(top_k_results.head(5).iterrows(), 1):
-                    # Get SHAP values for this specific row
-                    if orig_idx < len(shap_values_full):
-                        shap_row = shap_values_full[orig_idx]
-                    else:
-                        shap_row = np.zeros(len(feature_names))
-                    explanation = get_top_features_text(shap_row, feature_names)
-                    st.write(f"{idx}. **User {row['user']}** ({row['date']}): {explanation}")
-            
-            except Exception as e:
-                st.error(f"SHAP computation failed: {e}")
-                with st.expander("Error details (expand for stack trace)"):
-                    st.code(traceback.format_exc())
+                except Exception as e:
+                    st.error(f"SHAP computation failed: {e}")
+                    with st.expander("Error details (expand for stack trace)"):
+                        st.code(traceback.format_exc())
     
     # Footer status
     st.success("Saved results to artifacts/demo_scores.csv")
@@ -591,8 +599,10 @@ def main():
         # Top k slider
         top_k = st.slider("Top k anomalies", min_value=1, max_value=50, value=10, step=1)
         
-        # SHAP checkbox
-        show_shap = st.checkbox("Show SHAP explanations", value=True)
+        # SHAP checkbox (only show if SHAP is available)
+        show_shap = st.checkbox("Show SHAP explanations", value=SHAP_AVAILABLE, disabled=not SHAP_AVAILABLE)
+        if not SHAP_AVAILABLE:
+            st.caption("⚠️ SHAP not installed. Install with: pip install shap")
         
         # Run inference button
         run_button = st.button("Run Inference", type="primary")

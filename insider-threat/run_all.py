@@ -81,12 +81,11 @@ def check_environment():
         venv_python = script_dir / "venv" / "bin" / "python"
     
     if not venv_python.exists():
-        print("  [ERROR] Virtual environment not found!")
-        print("  Please run: python -m venv venv")
-        print("  Then: pip install -r requirements.txt")
-        return None, None
-    
-    python_cmd = str(venv_python)
+        print("  [INFO] Virtual environment not found, using system Python...")
+        import sys
+        python_cmd = sys.executable
+    else:
+        python_cmd = str(venv_python)
     
     # Check key dependencies
     print("  Checking dependencies...")
