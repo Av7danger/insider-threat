@@ -458,15 +458,21 @@ def render_results(results_df, top_k, show_shap, xgb_model, xgb_scaler):
     with col1:
         st.subheader("Top anomalous user-days")
         
-        # Prepare table data
+        # Prepare table data (robust to missing scores)
         table_data = []
         for idx, (_, row) in enumerate(top_k_results.iterrows(), 1):
+            iso_val = row.get('iso_score')
+            xgb_val = row.get('xgb_prob') if 'xgb_prob' in row else None
+
+            iso_display = f"{iso_val:.4f}" if pd.notna(iso_val) else "N/A"
+            xgb_display = f"{xgb_val:.4f}" if pd.notna(xgb_val) else "N/A"
+
             table_data.append({
                 'rank': idx,
                 'user': str(row['user']),
                 'date': str(row['date']),
-                'iso_score': f"{row['iso_score']:.4f}",
-                'xgb_prob': f"{row['xgb_prob']:.4f}" if pd.notna(row.get('xgb_prob')) else "N/A",
+                'iso_score': iso_display,
+                'xgb_prob': xgb_display,
                 'reason_short': f"High activity: {row['total_events']} events, {row['distinct_files']} files"
             })
         
