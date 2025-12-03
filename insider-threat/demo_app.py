@@ -249,23 +249,28 @@ def call_api_batch(features_df):
         }
         requests_list.append(req)
     
+    batch_size = 200
+    responses = []
+    
     try:
-        response = requests.post(
-            api_url,
-            json=requests_list,
-            timeout=10
-        )
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.ConnectionError:
+        for start in range(0, len(requests_list), batch_size):
+            batch = requests_list[start:start + batch_size]
+            response = requests.post(
+                api_url,
+                json=batch,
+                timeout=30
+            )
+            response.raise_for_status()
+            batch_json = response.json()
+            if not isinstance(batch_json, list):
+                raise ValueError("Unexpected API response format")
+            responses.extend(batch_json)
+        return responses
+    except requests.exceptions.RequestException as e:
+        st.warning(f"FastAPI request error: {e}")
         return None
-    except requests.exceptions.Timeout:
-        return None
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 404:
-            return None  # Endpoint doesn't exist
-        return None
-    except Exception:
+    except Exception as e:
+        st.warning(f"FastAPI error: {e}")
         return None
 
 def load_local_models():
